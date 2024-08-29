@@ -1,16 +1,17 @@
 import * as fs from 'fs';
 
-// Source: Sensitive data
-function getSensitiveData(): string {
-    // Example sensitive data (e.g., user password)
-    return 'userPassword123';
+// Source: Retrieve sensitive data (e.g., user password)
+function getUserPassword(): string {
+    // Example of sensitive data
+    return 'userPassword123'; // Sensitive information
 }
 
 // Sink: Storing sensitive data in plaintext
-function storeSensitiveData(data: string): void {
-    fs.writeFileSync('sensitive_data.txt', data);
+function storePassword(password: string): void {
+    // Write sensitive data to a file without encryption
+    fs.writeFileSync('user_password.txt', password, 'utf8');
 }
 
 // Example usage
-const sensitiveData = getSensitiveData();
-storeSensitiveData(sensitiveData);
+const password = getUserPassword();
+storePassword(password);

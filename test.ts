@@ -1,23 +1,26 @@
-// CWE-312: Cleartext Storage of Sensitive Information
-// Description: This code stores sensitive information (username and password) in cleartext 
-// using localStorage. This approach is insecure because localStorage is accessible by any
-// script running on the page and can be exploited if an attacker gains access to the browser.
+import { Injectable } from '@angular/core';
+import { CookieService } from 'ngx-cookie-service';
 
-class User {
-    username: string;
-    password: string;
+@Injectable({
+  providedIn: 'root'
+})
+export class InsecureService {
+  constructor(private cookieService: CookieService) {}
 
-    constructor(username: string, password: string) {
-        this.username = username;
-        this.password = password;
-    }
+  storeSensitiveData(data1: any, data2: any, data3: any, data4: any, data5: any, data6: any, data7: any) {
+    // NOT OK - Storing passwords directly in cache or template cache is not recommended
+    localStorage.setItem('cachePassword', data1.password);
+    sessionStorage.setItem('templateCachePassword', data2.password);
 
-    saveCredentials() {
-        // BAD: Storing sensitive information (username and password) in cleartext
-        localStorage.setItem('username', this.username); // Sensitive data stored in localStorage
-        localStorage.setItem('password', this.password); // Sensitive data stored in localStorage
-    }
+    // NOT OK - Storing passwords directly in cookies is not secure
+    this.cookieService.set('cookiePassword', data3.password);
+    this.cookieService.set('cookiePasswordObject', JSON.stringify(data4.password));
+
+    // OK - Storing passwords in other variables is acceptable
+    let otherPassword = data5.password;
+    let anotherPassword = data6.password;
+
+    // OK - Storing passwords as keys (not values) in cookies is acceptable
+    this.cookieService.set(data7.password, 'someValue');
+  }
 }
-
-const user = new User('exampleUser', 'examplePassword');
-user.saveCredentials();

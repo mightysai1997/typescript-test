@@ -1,26 +1,18 @@
-import { Injectable } from '@angular/core';
-import { CookieService } from 'ngx-cookie-service';
+class InsecureStorage {
+    storeSensitiveData(username: string, password: string) {
+        // NOT OK - Storing sensitive information in localStorage
+        localStorage.setItem('username', username);
+        localStorage.setItem('password', password);
 
-@Injectable({
-  providedIn: 'root'
-})
-export class InsecureService {
-  constructor(private cookieService: CookieService) {}
+        // NOT OK - Storing sensitive information in sessionStorage
+        sessionStorage.setItem('username', username);
+        sessionStorage.setItem('password', password);
 
-  storeSensitiveData(data1: any, data2: any, data3: any, data4: any, data5: any, data6: any, data7: any) {
-    // NOT OK - Storing passwords directly in cache or template cache is not recommended
-    localStorage.setItem('cachePassword', data1.password);
-    sessionStorage.setItem('templateCachePassword', data2.password);
-
-    // NOT OK - Storing passwords directly in cookies is not secure
-    this.cookieService.set('cookiePassword', data3.password);
-    this.cookieService.set('cookiePasswordObject', JSON.stringify(data4.password));
-
-    // OK - Storing passwords in other variables is acceptable
-    let otherPassword = data5.password;
-    let anotherPassword = data6.password;
-
-    // OK - Storing passwords as keys (not values) in cookies is acceptable
-    this.cookieService.set(data7.password, 'someValue');
-  }
+        // NOT OK - Writing sensitive information to a file (Node.js example)
+        const fs = require('fs');
+        fs.writeFileSync('credentials.txt', `Username: ${username}, Password: ${password}`);
+    }
 }
+
+const storage = new InsecureStorage();
+storage.storeSensitiveData('exampleUser', 'examplePassword');

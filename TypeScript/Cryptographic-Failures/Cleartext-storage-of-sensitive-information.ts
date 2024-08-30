@@ -1,28 +1,3 @@
-<<<<<<< HEAD
-import express, { Request, Response } from 'express';
-import * as fs from 'fs';
-import * as path from 'path';
-
-const app = express();
-const port = 3000;
-
-app.use(express.json());
-
-app.post('/save-password', (req: Request, res: Response) => {
-    try {
-        // Get password from the request body
-        const { password } = req.body;
-
-        // Check if the password is provided
-        if (!password || typeof password !== 'string') {
-            throw new Error('Password is required and must be a string');
-        }
-
-        // Save the password to a file in cleartext (vulnerable code)
-        const filePath = path.join(__dirname, 'passwords.txt');
-        fs.appendFileSync(filePath, password + '\n');
-
-=======
 /*CWE ID: CWE-312
 Name: Cleartext Storage of Sensitive Information
 Description: The vulnerability occurs when sensitive information is stored in cleartext. This means that the data is not encrypted or otherwise protected, making it accessible to anyone who can read the storage medium.*/

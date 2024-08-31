@@ -7,14 +7,14 @@ const app = express();
 app.use(cookieParser());
 
 app.get('/', (req, res) => {
-    if (req.cookies.profile) {
+    if (req.cookies.profile) { // Source
         try {
             // Decode and parse the cookie value as JSON
             const str = Buffer.from(req.cookies.profile, 'base64').toString();
             const obj = JSON.parse(str);
 
             // Validate the deserialized object
-            if (typeof obj === 'object' && obj !== null && typeof obj.username === 'string') {
+            if (obj && typeof obj.username === 'string') {
                 res.send(`Hello ${escapeHtml(obj.username)}`);
             } else {
                 res.status(400).send('Invalid profile data');

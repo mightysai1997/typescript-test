@@ -5,15 +5,18 @@ import * as unzipper from 'unzipper'; // Ensure 'unzipper' is installed
 const TARGET_DIR = path.join(__dirname, 'extracted_files'); // Set the intended extraction directory
 
 // Ensure the target directory exists
-fs.mkdirSync(TARGET_DIR, { recursive: true }); 
+fs.mkdirSync(TARGET_DIR, { recursive: true });
 
 fs.createReadStream('archive.zip')
   .pipe(unzipper.Parse()) // Source
   .on('entry', (entry: unzipper.Entry) => {
     const fileName = entry.path;
 
+    // Sanitize the fileName to avoid directory traversal
+    const sanitizedFileName = path.basename(fileName); // Only use the base name of the file
+
     // Construct and normalize the absolute path
-    const absolutePath = path.join(TARGET_DIR, fileName);
+    const absolutePath = path.join(TARGET_DIR, sanitizedFileName);
     const normalizedPath = path.normalize(absolutePath);
 
     // Ensure the normalized path starts with the target directory
@@ -23,8 +26,8 @@ fs.createReadStream('archive.zip')
       return;
     }
 
-    // Disallow leading slashes or backslashes in file paths
-    if (fileName.startsWith('/') || fileName.includes('\\')) {
+    // Disallow paths with leading slashes or backslashes
+    if (fileName.includes('/') || fileName.includes('\\')) {
       console.error(`Disallowed file path pattern: ${fileName}`);
       entry.autodrain(); // Skip this entry
       return;

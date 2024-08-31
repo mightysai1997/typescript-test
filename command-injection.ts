@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process'; // Use execFileSync for safer command execution
 import { escape } from 'html-escaper'; // Use a library to escape HTML
 
 // Create an Express application
@@ -10,10 +10,10 @@ app.get('/execute', (req: Request, res: Response) => {
     // Extract the command name from the query parameters
     const cmdName = req.query.cmd as string;
 
-    // Define a list of allowed commands
-    const allowedCommands: { [key: string]: string[] } = {
-        'listFiles': ['ls', '-l'],
-        'printDate': ['date'],
+    // Define a list of allowed commands with their file paths and arguments
+    const allowedCommands: { [key: string]: [string, string[]] } = {
+        'listFiles': ['/bin/ls', ['-l']],
+        'printDate': ['/bin/date', []],
         // Add more predefined commands here
     };
 
@@ -22,12 +22,12 @@ app.get('/execute', (req: Request, res: Response) => {
         return res.status(400).send('Invalid command');
     }
 
-    // Get the command to execute from the allowed list
-    const command = allowedCommands[cmdName];
+    // Get the command and arguments from the allowed list
+    const [command, args] = allowedCommands[cmdName];
 
     try {
-        // Execute the predefined command using execSync
-        const output = execSync(command.join(' '), { encoding: 'utf8' });
+        // Execute the predefined command using execFileSync
+        const output = execFileSync(command, args, { encoding: 'utf8' });
 
         // Escape HTML to prevent XSS attacks
         const escapedOutput = escape(output);

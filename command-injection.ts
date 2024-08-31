@@ -1,16 +1,15 @@
 import express, { Request, Response } from 'express';
-import { execFileSync } from 'child_process'; // Use execFileSync for safer command execution
-import { escape } from 'html-escaper'; // Use a library to escape HTML
+import { execFileSync } from 'child_process'; // Use execFileSync for safer execution
 
 // Create an Express application
 const app = express();
 
-// Define a route that executes a safe, predefined command
+// Define a route that accepts a command via query parameter
 app.get('/execute', (req: Request, res: Response) => {
-    // Extract the command name from the query parameters
-    const cmdName = req.query.cmd as string;
+    // Extract the command from the query parameters
+    const cmd = req.query.cmd as string;
 
-    // Define a list of allowed commands with their file paths and arguments
+    // Define a list of allowed commands and their paths
     const allowedCommands: { [key: string]: [string, string[]] } = {
         'listFiles': ['/bin/ls', ['-l']],
         'printDate': ['/bin/date', []],
@@ -18,12 +17,12 @@ app.get('/execute', (req: Request, res: Response) => {
     };
 
     // Validate the command name
-    if (!allowedCommands.hasOwnProperty(cmdName)) {
+    if (!allowedCommands.hasOwnProperty(cmd)) {
         return res.status(400).send('Invalid command');
     }
 
     // Get the command and arguments from the allowed list
-    const [command, args] = allowedCommands[cmdName];
+    const [command, args] = allowedCommands[cmd];
 
     try {
         // Execute the predefined command using execFileSync

@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { execSync } from 'child_process';
+import { escape } from 'html-escaper'; // Use a library to escape HTML
 
 // Create an Express application
 const app = express();
@@ -27,7 +28,15 @@ app.get('/execute', (req: Request, res: Response) => {
     try {
         // Execute the predefined command using execSync
         const output = execSync(command.join(' '), { encoding: 'utf8' });
-        res.send(`<pre>${output}</pre>`); // Display the output of the command
+
+        // Escape HTML to prevent XSS attacks
+        const escapedOutput = escape(output);
+
+        // Limit the length of the output to prevent large responses
+        const maxLength = 10000; // e.g., 10 KB
+        const limitedOutput = escapedOutput.slice(0, maxLength);
+
+        res.send(`<pre>${limitedOutput}</pre>`); // Display the output of the command
     } catch (error) {
         res.status(500).send(`Error: ${(error as Error).message}`);
     }

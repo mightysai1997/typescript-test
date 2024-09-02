@@ -1,19 +1,32 @@
 import { MongoClient, Collection } from 'mongodb';
 import express from 'express';
 
+// Create an Express application
 const app = express();
 const url = 'mongodb://localhost:27017/mydatabase'; // Replace with your MongoDB connection URL
 
-app.get('/users', (req, res) => {
-    // Sanitize and validate user input
-    const user = req.query.user ? String(req.query.user).trim() : '';
-    const city = req.query.city ? String(req.query.city).trim() : '';
+// Function to validate and sanitize input
+const sanitizeInput = (input: any): string => {
+    // Ensure the input is a string and escape special characters
+    if (typeof input === 'string') {
+        return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape special characters
+    }
+    return '';
+};
 
-    // Construct a sanitized query
-    const query = {
-        user: { $regex: new RegExp(`^${user}$`, 'i') },
-        city: { $regex: new RegExp(`^${city}$`, 'i') }
-    };
+app.get('/users', (req, res) => {
+    // Sanitize user input
+    const user = sanitizeInput(req.query.user as string);
+    const city = sanitizeInput(req.query.city as string);
+
+    // Construct a query object with sanitized input
+    const query: { [key: string]: any } = {};
+    if (user) {
+        query.user = user; // Directly assign if sanitized
+    }
+    if (city) {
+        query.city = city; // Directly assign if sanitized
+    }
 
     MongoClient.connect(url, (err, client) => {
         if (err) {
@@ -55,8 +68,8 @@ CWE : CWE-943
 Description : The original code is vulnerable to NoSQL Injection. It directly uses the `req.query.user` and `req.query.city` parameters to construct a MongoDB query without proper validation or sanitization. This can allow an attacker to inject malicious queries, potentially leading to unauthorized access or exposure of sensitive data.
 
 Fix Summary:
-1. **Input Sanitization**: The fixed code sanitizes and validates user input by trimming and converting it to a string to ensure it’s in a safe format before constructing the query.
-2. **Use of Regular Expressions**: The fixed code uses MongoDB's `$regex` operator to safely match user input. This approach allows for controlled, pattern-based querying while mitigating the risk of injection.
+1. **Input Validation and Sanitization**: The fixed code includes a `sanitizeInput` function that ensures user input is safely formatted and free from special characters that could be used for injection. This reduces the risk of NoSQL Injection.
+2. **Safe Query Construction**: The fixed code constructs queries using sanitized input, ensuring that user input cannot affect query structure or operations.
 
-By sanitizing inputs and using regular expressions for safe querying, the fixed code mitigates the risk of NoSQL injection.
+By implementing input sanitization and constructing queries safely, the fixed code mitigates the risk of NoSQL Injection.
 */

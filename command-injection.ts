@@ -1,39 +1,52 @@
 import express, { Request, Response } from 'express';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
+import escape from 'lodash.escape'; // Use lodash.escape for HTML escaping
+import rateLimit from 'express-rate-limit'; // Rate limiting
 
-// Create an Express application
 const app = express();
 
+// Rate limiting middleware
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: 'Too many requests, please try again later.',
+});
+
+app.use(limiter);
+
 // Define a whitelist of allowed commands
-const allowedCommands: { [key: string]: string } = {
-    'list': 'ls -l',
-    'currentDir': 'pwd',
-    // Add other safe commands here
+const allowedCommands: { [key: string]: [string, string[]] } = {
+    'listFiles': ['/bin/ls', ['-l']],
+    'printDate': ['/bin/date', []],
+    // Add more predefined commands here
 };
 
-// Define a route that accepts a command via query parameter
 app.get('/execute', (req: Request, res: Response) => {
-    // Extract the command from the query parameters
     const cmdKey = req.query.cmd as string;
 
-    // Check if the provided command is in the whitelist
-    const cmd = allowedCommands[cmdKey];
-    
-    if (cmd) {
-        try {
-            // Execute the command using execSync
-            const output = execSync(cmd, { encoding: 'utf8' });
-            res.send(`<pre>${output}</pre>`); // Display the output of the command
-        } catch (error) {
-            res.status(500).send(`Error: ${(error as Error).message}`);
-        }
-    } else {
-        // Command not allowed
-        res.status(400).send('Invalid command');
+    // Validate command key
+    if (!allowedCommands.hasOwnProperty(cmdKey)) {
+        return res.status(400).send('Invalid command');
+    }
+
+    const [command, args] = allowedCommands[cmdKey];
+
+    try {
+        // Execute the predefined command safely
+        const output = execFileSync(command, args, { encoding: 'utf8' });
+        const escapedOutput = escape(output);
+
+        // Limit the length of the output to prevent DoS attacks
+        const maxLength = 10000;
+        const limitedOutput = escapedOutput.slice(0, maxLength);
+
+        res.send(`<pre>${limitedOutput}</pre>`);
+    } catch (error) {
+        console.error('Execution error:', error); // Log the error server-side
+        res.status(500).send('An error occurred while executing the command.');
     }
 });
 
-// Start the server on port 3000
 app.listen(3000, () => {
     console.log('Server is running on http://localhost:3000');
 });

@@ -1,94 +1,3 @@
-import * as http from 'http';
-import { URL } from 'url';
-
-// Define a list of allowed target domains (whitelist)
-const allowedDomains = new Set([
-    'example.com',
-    'api.example.com',
-    // Add other allowed domains as needed
-]);
-
-const server = http.createServer((req, res) => {
-    try {
-        const url = new URL(req.url || '', `http://${req.headers.host}`);
-        const target = url.searchParams.get("target"); // Source
-
-        // Validate target parameter
-        if (!target || typeof target !== 'string') {
-            res.writeHead(400, {'Content-Type': 'text/plain'});
-            res.end('Bad Request');
-            return;
-        }
-
-        // Ensure target URL is well-formed
-        let targetURL;
-        try {
-            targetURL = new URL('https://' + target); // Validate URL format
-        } catch (e) {
-            res.writeHead(400, {'Content-Type': 'text/plain'});
-            res.end('Invalid URL format');
-            return;
-        }
-
-        // Validate target domain
-        const targetDomain = targetURL.hostname;
-
-        // Restrict to specific paths or patterns if necessary
-        if (!allowedDomains.has(targetDomain)) {
-            res.writeHead(400, {'Content-Type': 'text/plain'});
-            res.end('Invalid target domain');
-            return;
-        }
-
-        // Restrict requests to specific paths or patterns (e.g., only allowing certain paths)
-        if (!targetURL.pathname.startsWith('/data/')) {
-            res.writeHead(400, {'Content-Type': 'text/plain'});
-            res.end('Invalid target path');
-            return;
-        }
-
-        // Safe: `target` is validated, domain is whitelisted, and path is restricted
-        const options = {
-            hostname: targetURL.hostname,
-            port: targetURL.port,
-            path: targetURL.pathname,
-            method: 'GET',
-            protocol: targetURL.protocol,
-        };
-
-        const request = http.request(options, response => { // Use `http.request` for more control
-            let data = '';
-
-            response.on('data', chunk => {
-                data += chunk;
-            });
-
-            response.on('end', () => {
-                // Process request response ...
-                res.writeHead(200, {'Content-Type': 'text/plain'});
-                res.end(data);
-            });
-        });
-
-        request.on('error', err => {
-            res.writeHead(500, {'Content-Type': 'text/plain'});
-            res.end('Internal Server Error');
-            console.error('Error during HTTP request:', err);
-        });
-
-        request.end();
-    } catch (err) {
-        res.writeHead(500, {'Content-Type': 'text/plain'});
-        res.end('Internal Server Error');
-        console.error('Unexpected error:', err);
-    }
-});
-
-const PORT = 3000;
-server.listen(PORT, () => {
-    console.log(`Server is listening on port ${PORT}`);
-});
-
 /*
 Sample code for vulnerability type : Server-Side Request Forgery (SSRF)
 CWE : CWE-918
@@ -102,3 +11,51 @@ Fix Summary:
 
 By implementing thorough validation, domain whitelisting, path restrictions, and using more controlled request handling, the fixed code mitigates the risk of SSRF attacks.
 */
+
+import * as http from 'http';
+import { URL } from 'url';
+
+const allowedHosts = ['example.com']; // Define allowed hosts
+
+const server = http.createServer(function(req, res) {
+    const target = new URL(req.url || '', "http://example.com").searchParams.get("target"); // Source
+
+    // Check if target is provided and is a valid string
+    if (!target || typeof target !== 'string') {
+        res.writeHead(400, {'Content-Type': 'text/plain'});
+        res.end('Bad Request');
+        return;
+    }
+
+    // Validate the target host
+    const targetUrl = new URL(`https://${target}.example.com/data/`);
+    if (!allowedHosts.includes(targetUrl.hostname)) {
+        res.writeHead(400, {'Content-Type': 'text/plain'});
+        res.end('Invalid host');
+        return;
+    }
+
+    // Safe: `target` is validated against allowed hosts
+    http.get(targetUrl.toString(), response => {
+        let data = '';
+
+        response.on('data', chunk => {
+            data += chunk;
+        });
+
+        response.on('end', () => {
+            // Process request response ...
+            res.writeHead(200, {'Content-Type': 'text/plain'});
+            res.end(data);
+        });
+    }).on('error', (err) => {
+        console.error('Request error:', err); // Log the error server-side
+        res.statusCode = 500;
+        res.end('Internal Server Error');
+    });
+});
+
+const PORT = 3000;
+server.listen(PORT, () => {
+    console.log(`Server is listening on port ${PORT}`);
+});

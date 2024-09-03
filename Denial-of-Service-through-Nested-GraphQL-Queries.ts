@@ -1,7 +1,13 @@
+/*
+Type Of Vulnerability : Denial of Service (DoS) through Nested GraphQL Queries
+CWE : CWE-400
+Description : The provided code is vulnerable to Denial of Service (DoS) through deeply nested GraphQL queries. Attackers can exploit this by submitting complex, deeply nested queries, potentially exhausting server resources and leading to a DoS condition. To mitigate this risk, the `graphql-depth-limit` middleware is used to limit the depth of nested queries.
+*/
+
 import express from 'express';
 import expressGraphQL from 'express-graphql';
 import { buildSchema } from 'graphql';
-import depthLimit from 'graphql-depth-limit';
+import depthLimit from 'graphql-depth-limit'; // Import graphql-depth-limit middleware
 
 const app = express();
 const PORT = 3000;
@@ -31,12 +37,13 @@ const root = {
     }
 };
 
-// Create the GraphQL server with depth limit middleware
 app.use('/graphql', expressGraphQL({
     schema: vulnerableSchema,
     rootValue: root,
     graphiql: true, // Enable GraphQL interactive query editor
-    validationRules: [depthLimit(5)] // Set the maximum query depth to 5
+
+    // Fix applied: Add depth limit middleware to prevent deeply nested queries
+    validationRules: [depthLimit(3)] // Limit the depth of nested queries to 3
 }));
 
 app.listen(PORT, () => {
